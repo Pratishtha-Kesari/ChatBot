@@ -1,1 +1,1 @@
-# ChatBot
+# BrainBuddy is a smart and interactive chatbot designed to provide a personalized user experience with advanced math-solving capabilities. The chatbot is developed #to understand natural language queries, solve mathematical expressions, and remember user-specific information.
