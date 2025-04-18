@@ -1,0 +1,218 @@
+//BrainBuddy
+import random
+import math
+import sympy as sp
+from sympy.parsing.sympy_parser import parse_expr
+from fractions import Fraction
+
+# ========== MEMORY ==========  
+user_memory = {
+    'name': None,
+    'last_question': None,
+    'last_answer': None,
+    'chat_history': [],
+    'struggles': {},
+    'score': {'correct': 0, 'incorrect': 0},
+    'topic_streaks': {'geometry': 0, 'fractions': 0, 'trigonometry': 0},
+    'quiz_score': 0,
+    'topics': {}
+}
+
+# ========== GREETINGS & SLANG DETECTION ==========  
+def get_greeting(user_name):
+    greetings = [
+        f"Hey there, {user_name}! 💡",
+        f"What's up, {user_name}? Ready to crunch some numbers? 🔢",
+        f"Hi, {user_name}! Let's learn and have fun 📘✨"
+    ]
+    return random.choice(greetings)
+
+def detect_slang_or_emotion(text):
+    text = text.lower()
+    slang_responses = {
+        "yo": "Yo yo! I’m here and ready to solve some math! 😎",
+        "sup": "Not much, just chilling with numbers. You? 😄",
+        "bruh": "Haha, did math confuse you again? Let me help you out! 🤓",
+        "lol": "Glad you're having fun! Math can be cool 😄",
+        "ugh": "Frustrated? Let’s slow down and break it step-by-step 💪"
+    }
+    for word, response in slang_responses.items():
+        if word in text:
+            return response
+
+    if any(word in text for word in ["sad", "tired", "upset"]):
+        return "I sense you're feeling down. Don’t worry, I'm here to help you! 💖"
+    elif any(word in text for word in ["happy", "excited"]):
+        return "Yay! I’m glad you’re feeling good! Let’s do some fun math together! 🎉"
+    return None
+
+# ========== MEMORY & FEEDBACK ==========  
+def store_user_data(user_name, topic, progress=None):
+    if user_name not in user_memory:
+        user_memory[user_name] = {'topics': {}, 'progress': {}}
+    if topic:
+        user_memory[user_name]['topics'][topic] = True
+    if progress:
+        user_memory[user_name]['progress'][topic] = progress
+
+def get_user_progress(user_name, topic):
+    if user_name in user_memory and topic in user_memory[user_name]['progress']:
+        return user_memory[user_name]['progress'][topic]
+    return 0
+
+def track_user_progress(user_name, topic, correct_answers, total_questions):
+    progress = f"You've solved {correct_answers} out of {total_questions} problems correctly today! Keep it up!"
+    store_user_data(user_name, topic, correct_answers)
+    return progress
+
+def remember_user(name):
+    user_memory['name'] = name
+    return f"Hey {name}! I'm BrainBuddy – your math pal 🤖. Ready to tackle numbers with me?"
+
+def personalized_feedback():
+    for topic, streak in user_memory['topic_streaks'].items():
+        if streak >= 3:
+            return f"Great job! You've solved {streak} {topic} problems in a row! Want to try a new topic? 😊"
+    return "Keep going! You're doing awesome!"
+
+def store_question_and_answer(question, answer):
+    user_memory['chat_history'].append((question, answer))
+    if len(user_memory['chat_history']) > 5:
+        user_memory['chat_history'].pop(0)
+
+def update_progress(is_correct):
+    if is_correct:
+        user_memory['score']['correct'] += 1
+    else:
+        user_memory['score']['incorrect'] += 1
+
+def show_progress():
+    return f"Correct: {user_memory['score']['correct']} | Incorrect: {user_memory['score']['incorrect']}"
+
+def give_hint():
+    return "Hint: Remember to follow BODMAS rules when solving complex expressions!"
+
+# ========== MATH OPERATIONS & GEOMETRY ==========  
+def solve_basic_operations(expression):
+    try:
+        result = eval(expression)
+        store_question_and_answer(expression, result)
+        update_progress(True)
+        return f"Let's solve: {expression}\nAnswer: {result} {personalized_feedback()}"
+    except Exception as e:
+        return f"Oops! Something went wrong while solving: {expression}\nError: {str(e)}"
+
+def solve_bodmas(expression):
+    try:
+        expr = parse_expr(expression, evaluate=True)
+        store_question_and_answer(expression, expr)
+        update_progress(True)
+        return f"Solving with BODMAS: {expression} = {expr} {personalized_feedback()}"
+    except Exception as e:
+        return f"Could not parse expression due to: {str(e)}"
+
+def solve_fractions(f1, op, f2):
+    try:
+        frac1 = Fraction(f1)
+        frac2 = Fraction(f2)
+        if op == '+': result = frac1 + frac2
+        elif op == '-': result = frac1 - frac2
+        elif op == '*': result = frac1 * frac2
+        elif op == '/': result = frac1 / frac2
+        expression = f"{f1} {op} {f2}"
+        store_question_and_answer(expression, result)
+        update_progress(True)
+        return f"{expression} = {result} {personalized_feedback()}"
+    except Exception as e:
+        return f"Error in fractional operation: {str(e)}"
+
+def area_circle(radius):
+    result = math.pi * radius ** 2
+    store_question_and_answer(f"Area of circle with radius {radius}", result)
+    update_progress(True)
+    return f"Area of Circle: π × r² = {result:.2f} sq units {personalized_feedback()}"
+
+def volume_cube(side):
+    result = side ** 3
+    store_question_and_answer(f"Volume of cube with side {side}", result)
+    update_progress(True)
+    return f"Volume of Cube: side³ = {result} cubic units {personalized_feedback()}"
+
+# ========== TRIGONOMETRY ==========  
+def basic_trigonometry(func, angle_deg):
+    angle_rad = math.radians(angle_deg)
+    try:
+        if func == 'sin': result = math.sin(angle_rad)
+        elif func == 'cos': result = math.cos(angle_rad)
+        elif func == 'tan': result = math.tan(angle_rad)
+        else: return "Unknown trigonometric function. Use sin, cos, or tan."
+        store_question_and_answer(f"{func}({angle_deg}°)", result)
+        update_progress(True)
+        return f"{func}({angle_deg}°) = {result:.2f} {personalized_feedback()}"
+    except Exception as e:
+        return f"Error in trigonometry: {str(e)}"
+
+# ========== LOGARITHMS ==========  
+def solve_log(value, base=10):
+    try:
+        result = math.log(value, base)
+        store_question_and_answer(f"log base {base} of {value}", result)
+        update_progress(True)
+        return f"log base {base} of {value} = {result:.2f} {personalized_feedback()}"
+    except Exception as e:
+        return f"Error solving log: {str(e)}"
+
+# ========== QUICK HELP & TOPIC SWITCH ==========  
+def get_help(user_name, topic=None):
+    help_message = "I can help you with math topics like addition, fractions, geometry, algebra, and more! How can I assist you today?"
+    if topic:
+        help_message += f"\nNeed help with {topic}? I can explain it step-by-step!"
+    return help_message
+
+def offer_topic_switch():
+    topics = ["fractions", "geometry", "algebra", "word problems"]
+    return f"Would you like to try {random.choice(topics)} now or continue with your current topic?"
+
+# ========== FRIENDLY EXIT ==========  
+def exit_message(user_name):
+    return f"Thanks for chatting, {user_name}! If you ever need more help with math, I’ll be right here. Have a great day! 😄"
+
+# ========== CONVERSATION FLOW ==========  
+def conversation(user_name, user_input, topic=None):
+    # Personalized greeting
+    greeting = get_greeting(user_name)
+    
+    # Detect emotion or slang
+    emotion_response = detect_slang_or_emotion(user_input)
+    if emotion_response:
+        return emotion_response
+    
+    # Check for help request
+    if "help" in user_input.lower():
+        return get_help(user_name, topic)
+
+    # Check for topic switch
+    if "switch" in user_input.lower():
+        return offer_topic_switch()
+
+    # Check if user wants to exit
+    if "exit" in user_input.lower():
+        return exit_message(user_name)
+
+    # Assuming the user has a question and you solve it
+    if topic:
+        # Assume we solved a math problem and give feedback
+        correct_answers = 5  # Example correct answers count
+        total_questions = 7  # Example total questions
+        progress = track_user_progress(user_name, topic, correct_answers, total_questions)
+        return f"{greeting}\n{progress}"
+
+    return f"{greeting}\nI’m here to help you with any math topic. What would you like to learn about today?"
+
+# Example user interaction
+user_name = "Pratishtha"
+user_input = "help with fractions"
+topic = "fractions"
+
+# Call conversation function to simulate interaction
+print(conversation(user_name, user_input, topic))
